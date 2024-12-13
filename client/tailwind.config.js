@@ -6,42 +6,54 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        forest: {
-          50: '#f3faf7',
-          100: '#d8f3ec',
-          200: '#b3e6d9',
-          300: '#84d3c2',
-          400: '#56baa6',
-          500: '#399782',
-          600: '#2d7a68',
-          700: '#266155',
-          800: '#214e45',
-          900: '#1d3f3a',
+        slate: {
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
         },
-        earth: {
-          50: '#faf6f3',
-          100: '#f0e6e0',
-          200: '#e0cdc1',
-          300: '#cca895',
-          400: '#b68468',
-          500: '#a06c4e',
-          600: '#8c5b40',
-          700: '#724a36',
-          800: '#5e3d2f',
-          900: '#4e3328',
+        primary: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
-        sky: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+        secondary: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
         },
+        accent: {
+          50: '#fdf4ff',
+          100: '#fae8ff',
+          200: '#f5d0fe',
+          300: '#f0abfc',
+          400: '#e879f9',
+          500: '#d946ef',
+          600: '#c026d3',
+          700: '#a21caf',
+          800: '#86198f',
+          900: '#701a75',
+        }
       }
     }
   },
@@ -49,31 +61,56 @@ module.exports = {
   daisyui: {
     themes: [
       {
-        naturetheme: {
-          primary: "#399782",
-          secondary: "#a06c4e",
-          accent: "#0ea5e9",
-          neutral: "#1d3f3a",
-          "base-100": "#f3faf7",
-          info: "#7dd3fc",
-          success: "#84d3c2",
-          warning: "#cca895",
-          error: "#b68468",
-        }
-      },
-      {
-        mytheme: {
-          primary: "#9700ff",
-          secondary: "#cf0000",
-          accent: "#00a3ff",
-          neutral: "#0c041a",
-          "base-100": "#fffde9",
-          info: "#0077f2",
-          success: "#98d300",
-          warning: "#f0a100",
-          error: "#ff396b",
+        corporate: {
+          primary: "#2563eb",        // Blue 600
+          secondary: "#16a34a",      // Green 600
+          accent: "#c026d3",         // Purple 600
+          neutral: "#1e293b",        // Slate 800
+          "base-100": "#f8fafc",     // Slate 50
+          info: "#60a5fa",          // Blue 400
+          success: "#4ade80",       // Green 400
+          warning: "#f59e0b",       // Amber 500
+          error: "#ef4444",         // Red 500
+
+          "--rounded-box": "0.5rem",
+          "--rounded-btn": "0.5rem",
+          "--rounded-badge": "0.5rem",
+
+          "--animation-btn": "0.25s",
+          "--animation-input": "0.2s",
+
+          "--btn-text-case": "normal-case",
+          "--navbar-padding": "1rem",
+        },
+        dark: {
+          primary: "#3b82f6",        // Blue 500
+          secondary: "#22c55e",      // Green 500
+          accent: "#d946ef",         // Purple 500
+          neutral: "#0f172a",        // Slate 900
+          "base-100": "#1e293b",     // Slate 800
+          info: "#93c5fd",          // Blue 300
+          success: "#86efac",       // Green 300
+          warning: "#fcd34d",       // Amber 300
+          error: "#f87171",         // Red 300
+
+          "--rounded-box": "0.5rem",
+          "--rounded-btn": "0.5rem",
+          "--rounded-badge": "0.5rem",
+
+          "--animation-btn": "0.25s",
+          "--animation-input": "0.2s",
+
+          "--btn-text-case": "normal-case",
+          "--navbar-padding": "1rem",
         }
       }
-    ]
+    ],
+    darkTheme: "dark",
+    base: true,
+    styled: true,
+    utils: true,
+    prefix: "",
+    logs: false,
+    themeRoot: ":root"
   }
 }
