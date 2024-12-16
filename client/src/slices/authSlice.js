@@ -21,6 +21,42 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+export const forgotPassword = createAsyncThunk(
+  'auth/forgotPassword',
+  async (email, {rejectWithValue})=>{
+    try {
+      const response = await fetch(`${API_PREFIX}/forgot-password`, {
+        method:'POST',
+        headers:{'Content-Type': 'application/json'},
+        body:JSON.stringify({email})
+      });
+
+      if (!response.ok) throw new Error('Failed to process request');
+      return await response.json();
+    } catch(error){
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async ({token,password}, {rejectWithValue})=>{
+    try {
+      const response=await fetch(`${API_PREFIX}/reset-password/${token}`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({password})
+      });
+
+      if (!response.ok) throw new Error('failed to reset password');
+      return await response.json();
+    } catch (error){
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const checkSession = createAsyncThunk('auth/checkSession', async (_, thunkAPI) => {
   try {
     const response = await fetch(`${API_PREFIX}/check_session`, { credentials: 'include' });
@@ -209,6 +245,12 @@ const authSlice = createSlice({
         if (state.user) {
           state.user.has_subscription = action.payload.hasSubscription;
         }
+      })
+      .addCase(forgotPassword.fulfilled, (state)=>{
+        state.error=null;
+      })
+      .addCase(resetPassword.fulfilled, (state)=>{
+        state.error=null;
       });
   },
 });

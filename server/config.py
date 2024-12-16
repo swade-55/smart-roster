@@ -13,21 +13,26 @@ load_dotenv()
 secret_key = secrets.token_hex(16)
 
 
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///roster_management.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///roster_management.db'
 #database_uri = os.environ.get('DATABASE_URL', 'postgresql://sawade:Ia26i2023@localhost/roster_management')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-#app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+#app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['STRIPE_PUBLISHABLE_KEY'] = os.getenv('STRIPE_PUBLISHABLE_KEY')
 app.config['STRIPE_WEBHOOK_SECRET'] = os.getenv('STRIPE_WEBHOOK_SECRET')
-# Add these configurations
+
 app.config.update(
     SESSION_COOKIE_SECURE=False,  # Set to True if using HTTPS
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
     SESSION_COOKIE_PATH='/',  # Match your app's base URL
     #SESSION_COOKIE_DOMAIN='3.141.20.174',
-    PERMANENT_SESSION_LIFETIME=timedelta(days=1)
+    PERMANENT_SESSION_LIFETIME=timedelta(days=1),
+    MAIL_SERVER=os.getenv('MAIL_SERVER'),
+    MAIL_PORT=int(os.getenv('MAIL_PORT',587)),
+    MAIL_USE_TLS=os.getenv('MAIL_USE_TLS','True').lower()=='true',
+    MAIL_USERNAME=os.getenv('MAIL_USERNAME'),
+    MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),
+    MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
 )
 
 #config for excel spreadsheet import
@@ -44,12 +49,8 @@ migrate = Migrate(app,db)
 db.init_app(app)
 
 login_manager = LoginManager(app)
-#login_manager.login_view = 'login'
 login_manager.login_view = 'api.login' 
 
-# CORS(app)
-#CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
-#CORS(app, resources={r"/labinv/api/*": {"origins": "*"}})
 CORS(app, resources={
     r"/labinv/api/*": {
         "origins": ["http://3.141.20.174", "http://localhost:3000"],

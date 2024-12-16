@@ -2,7 +2,9 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_serializer import SerializerMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import UserMixin
-
+import re
+import secrets
+from datetime import datetime,timedelta
 db = SQLAlchemy()
 
 class User(db.Model, UserMixin, SerializerMixin):
@@ -15,7 +17,31 @@ class User(db.Model, UserMixin, SerializerMixin):
     is_admin = db.Column(db.Boolean, default=False)
     has_subscription = db.Column(db.Boolean, default=False)
 
+    password_reset_token = db.Column(db.String(100),unique=True)
+    password_reset_expires = db.Column(db.DateTime)
+    must_change_password = db.Column(db.Boolean,default=False)
+
     departments = db.relationship('Department', back_populates='user', cascade='all, delete-orphan')
+
+    @staticmethod
+    def is_password_valid(password):
+        if len(password)<10:
+            return False, "Password must be at least 10 characters long"
+        if not re.search(r'[A-Z]',password):
+            return False, "Password must contain at least one uppercase letter"
+        if not re.search(r'[a-z]',password):
+            return False, "Password must contain at least one lowercase letter"
+        if not re.search(r'\d', password):
+            return False, "Password must contain at least one number"
+        return True, "Password is valid"
+
+    def generate_reset_token(self):
+        self.password_reset_token=secrets.token_urlsafe(32)
+        self.password_reset_expires = datetime.utcnow()+timedelta(hours=24)
+        print(f"Generated token: {self.password_reset_token}")
+        print(f"Expires at: {self.password_reset_expires}")
+        db.session.commit()
+        return self.password_reset_token
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

@@ -23,11 +23,50 @@ const DAYS_OF_WEEK = [
   'Saturday'
 ];
 
+const PackageInfo = ({ selectedPackage }) => {
+  if (!selectedPackage) return null;
+
+  const info = {
+    '7-day': {
+      title: '7-Day Package',
+      features: [
+        'Covers all 7 days of operation',
+        'Supports both 4 and 5-day employee schedules',
+        'Flexible staffing distribution',
+        'Must have staffing needs for all days'
+      ]
+    },
+    '6-day': {
+      title: '6-Day Package',
+      features: [
+        'Covers 6 days of operation',
+        '4-day employee schedules only',
+        'One guaranteed off day',
+        'More consistent scheduling patterns'
+      ]
+    }
+  };
+
+  const packageDetails = info[selectedPackage];
+
+  return (
+    <div className="bg-blue-50 p-4 rounded-lg mb-4">
+      <h3 className="font-bold mb-2">{packageDetails.title}</h3>
+      <ul className="text-sm list-disc pl-5">
+        {packageDetails.features.map((feature, index) => (
+          <li key={index}>{feature}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
 const ScheduleForm = () => {
   const dispatch = useDispatch();
   const { scheduleData, status, error } = useSelector((state) => state.schedule);
-  
-  const [scheduleType, setScheduleType] = useState('5');
+
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [scheduleType, setScheduleType] = useState('4');
   const [staffingNeeds, setStaffingNeeds] = useState({
     Sunday: 12,
     Monday: 13,
@@ -37,6 +76,7 @@ const ScheduleForm = () => {
     Friday: 5,
     Saturday: 8
   });
+  const [validationError, setValidationError] = useState(null);
 
   const handleInputChange = (day, value) => {
     setStaffingNeeds(prev => ({
@@ -45,40 +85,68 @@ const ScheduleForm = () => {
     }));
   };
 
-  const validateSchedule = (needs) => {
-    const daysNeeded = Object.values(needs).filter(v => v > 0).length;
-    if (scheduleType === '4' && daysNeeded > 4) {
-      return "4-day schedule cannot cover more than 4 working days";
+  const validateSchedule = () => {
+    const workingDays = Object.values(staffingNeeds).filter(v => v > 0).length;
+    
+    if (!selectedPackage) {
+      return "Please select a schedule package";
     }
-    if (scheduleType === '5' && daysNeeded > 5) {
-      return "5-day schedule cannot cover more than 5 working days";
+
+    if (selectedPackage === '7-day') {
+      if (workingDays < 7) {
+        return "7-day package requires staffing for all 7 days";
+      }
+    } else if (selectedPackage === '6-day') {
+      if (workingDays > 6) {
+        return "6-day package cannot have more than 6 working days";
+      }
+      if (scheduleType !== '4') {
+        return "6-day package only supports 4-day employee schedules";
+      }
     }
     return null;
   };
 
+  const handlePackageSelect = (packageType) => {
+    setSelectedPackage(packageType);
+    if (packageType === '6-day') {
+      setScheduleType('4');
+    }
+    setValidationError(null);
+  };
+
   const getChartData = () => {
     if (!scheduleData) return [];
-    
+
     return DAYS_OF_WEEK.map(day => ({
       name: day,
-      variance: scheduleData.variances?.[day] || 0,
-      required: scheduleData.daily_requirements?.[day] || 0,
-      scheduled: scheduleData.daily_totals?.[day] || 0,
+      required: scheduleData.daily_requirements[day] || 0,
+      scheduled: scheduleData.daily_totals[day] || 0,
+      variance: scheduleData.variances[day] || 0
     }));
   };
 
   const handleGenerateSchedule = async () => {
+    const validationResult = validateSchedule();
+    if (validationResult) {
+      setValidationError(validationResult);
+      return;
+    }
+
     const payload = {
-      required_heads: DAYS_OF_WEEK.slice(0, 6).map(day => staffingNeeds[day]),
-      schedule_type: scheduleType
+      required_heads: DAYS_OF_WEEK.map(day => staffingNeeds[day]),
+      schedule_type: scheduleType,
+      package_type: selectedPackage
     };
-    
-    console.log('Sending payload:', JSON.stringify(payload, null, 2)); // Pretty print the payload
-  
+
+    console.log('Sending payload:', JSON.stringify(payload, null, 2));
+
     try {
       await dispatch(fetchSchedule(payload)).unwrap();
+      setValidationError(null);
     } catch (err) {
       console.error('Failed to generate schedule:', err);
+      setValidationError(err.message);
     }
   };
 
@@ -86,15 +154,44 @@ const ScheduleForm = () => {
     <div className="container mx-auto p-4 space-y-6">
       <div className="bg-white rounded-lg shadow-lg">
         <div className="p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">Staff Requirements Input</h2>
+          <h2 className="text-xl font-bold mb-4">Select Schedule Package</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <button
+              onClick={() => handlePackageSelect('7-day')}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                selectedPackage === '7-day'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-blue-300'
+              }`}
+            >
+              <h3 className="font-bold">7-Day Package</h3>
+              <p className="text-sm text-gray-600">Flexible scheduling with 4/5 day options</p>
+            </button>
+            <button
+              onClick={() => handlePackageSelect('6-day')}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                selectedPackage === '6-day'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-blue-300'
+              }`}
+            >
+              <h3 className="font-bold">6-Day Package</h3>
+              <p className="text-sm text-gray-600">4-day schedules with one guaranteed off day</p>
+            </button>
+          </div>
+          
+          {selectedPackage && <PackageInfo selectedPackage={selectedPackage} />}
+          
+          <div className="flex items-center justify-between mt-6">
+            <h2 className="text-xl font-bold">Staff Requirements</h2>
             <select
               value={scheduleType}
               onChange={(e) => setScheduleType(e.target.value)}
               className="w-32 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={selectedPackage === '6-day'}
             >
               <option value="4">4-Day</option>
-              <option value="5">5-Day</option>
+              {selectedPackage === '7-day' && <option value="5">5-Day</option>}
             </select>
           </div>
         </div>
@@ -113,10 +210,17 @@ const ScheduleForm = () => {
               </div>
             ))}
           </div>
-          <button 
-            onClick={handleGenerateSchedule} 
+          
+          {validationError && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-600">
+              {validationError}
+            </div>
+          )}
+
+          <button
+            onClick={handleGenerateSchedule}
             className="mt-4 w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
-            disabled={status === 'loading'}
+            disabled={status === 'loading' || !selectedPackage}
           >
             {status === 'loading' ? (
               <span className="flex items-center justify-center">
@@ -124,16 +228,16 @@ const ScheduleForm = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Generating {scheduleType}-Day Schedule...
+                Generating Schedule...
               </span>
             ) : (
-              `Generate ${scheduleType}-Day Schedule`
+              'Generate Schedule'
             )}
           </button>
         </div>
       </div>
 
-      {error && (
+      {error && !validationError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
           {error}
         </div>
@@ -193,7 +297,7 @@ const ScheduleForm = () => {
                     <Bar dataKey="scheduled" fill="#2563eb" name="Scheduled" />
                     <Bar dataKey="variance" name="Variance">
                       {getChartData().map((entry, index) => (
-                        <Cell 
+                        <Cell
                           key={`cell-${index}`}
                           fill={entry.variance >= 0 ? '#22c55e' : '#ef4444'}
                         />
@@ -221,7 +325,7 @@ const ScheduleForm = () => {
                   <div className="text-sm font-medium text-gray-500">Total Variance</div>
                   <div className="mt-1 text-2xl font-semibold">
                     {scheduleData.staffing_analysis?.variance_summary?.total_over_staffed +
-                     scheduleData.staffing_analysis?.variance_summary?.total_under_staffed}
+                      scheduleData.staffing_analysis?.variance_summary?.total_under_staffed}
                   </div>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">

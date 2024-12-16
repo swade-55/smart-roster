@@ -2,6 +2,27 @@ from models import db, User, Department, JobClass, Employee, Metric, EmployeeMet
 from config import app
 import random
 from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash
+
+def create_user_with_validation(username, email, password, is_admin=False, has_subscription=False):
+    """Helper function to create a user with password validation"""
+    user = User(
+        username=username,
+        email=email,
+        is_admin=is_admin,
+        has_subscription=has_subscription,
+        password_reset_token=None,
+        password_reset_expires=None,
+        must_change_password=False
+    )
+    
+    # Validate password before setting
+    is_valid, message = User.is_password_valid(password)
+    if not is_valid:
+        raise ValueError(f"Invalid password for user {username}: {message}")
+    
+    user.set_password(password)
+    return user
 
 def seed():
     with app.app_context():
@@ -16,14 +37,42 @@ def seed():
         User.query.delete()
         db.session.commit()
 
-        # Create admin user
-        admin = User(username='admin', email='admin@example.com', is_admin=True, has_subscription=True)
-        admin.set_password('adminpass')
-        dwight = User(username='dwight', email='dwight@example.com', is_admin=True, has_subscription=True)
-        dwight.set_password('dwightpass')
-        db.session.add(dwight)
-        db.session.add(admin)
-        db.session.commit()
+        # Create admin user with secure password
+        try:
+            admin = create_user_with_validation(
+                username='admin',
+                email='admin@example.com',
+                password='AdminPass123!',  # Meets password requirements
+                is_admin=True,
+                has_subscription=True
+            )
+            
+            dwight = create_user_with_validation(
+                username='dwight',
+                email='dwight@example.com',
+                password='DwightPass123!',  # Meets password requirements
+                is_admin=True,
+                has_subscription=True
+            )
+            
+            # Create some test users with different password states
+            test_user = create_user_with_validation(
+                username='testuser',
+                email='test@example.com',
+                password='TestUser123!',
+                is_admin=False,
+                has_subscription=False
+            )
+            # Simulate a user that needs to reset password
+            test_user.must_change_password = True
+            test_user.password_reset_token = test_user.generate_reset_token()
+            
+            db.session.add_all([admin, dwight, test_user])
+            db.session.commit()
+
+        except ValueError as e:
+            print(f"Error creating users: {e}")
+            return
 
         # Create departments
         departments = [
@@ -109,6 +158,19 @@ def seed():
             )
             db.session.add(daily_demand)
         db.session.commit()
+
+        print("Seed completed successfully!")
+        print("Test users created:")
+        print("1. Admin user:")
+        print("   Username: admin")
+        print("   Password: AdminPass123!")
+        print("2. Dwight user:")
+        print("   Username: dwight")
+        print("   Password: DwightPass123!")
+        print("3. Test user (with reset password flag):")
+        print("   Username: testuser")
+        print("   Password: TestUser123!")
+        print("   Reset token: ", test_user.password_reset_token)
 
 if __name__ == '__main__':
     seed()

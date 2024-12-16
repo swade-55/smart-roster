@@ -1,8 +1,8 @@
-"""empty message
+"""Add password reset columns to users table
 
-Revision ID: 3ffe90590d36
+Revision ID: 8c06e28eff80
 Revises: 
-Create Date: 2024-10-12 15:47:10.632767
+Create Date: 2024-12-14 17:21:50.090182
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '3ffe90590d36'
+revision = '8c06e28eff80'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -37,8 +37,13 @@ def upgrade():
     sa.Column('email', sa.String(), nullable=False),
     sa.Column('password_hash', sa.String(), nullable=False),
     sa.Column('is_admin', sa.Boolean(), nullable=True),
+    sa.Column('has_subscription', sa.Boolean(), nullable=True),
+    sa.Column('password_reset_token', sa.String(length=100), nullable=True),
+    sa.Column('password_reset_expires', sa.DateTime(), nullable=True),
+    sa.Column('must_change_password', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
+    sa.UniqueConstraint('password_reset_token'),
     sa.UniqueConstraint('username')
     )
     op.create_table('departments',
@@ -73,8 +78,8 @@ def upgrade():
     op.create_table('job_class_metrics',
     sa.Column('job_class_id', sa.Integer(), nullable=False),
     sa.Column('metric_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['job_class_id'], ['job_classes.id'], ),
-    sa.ForeignKeyConstraint(['metric_id'], ['metrics.id'], ),
+    sa.ForeignKeyConstraint(['job_class_id'], ['job_classes.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['metric_id'], ['metrics.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('job_class_id', 'metric_id')
     )
     op.create_table('employee_metrics',

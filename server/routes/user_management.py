@@ -9,13 +9,79 @@ import os
 from dotenv import load_dotenv
 import logging
 import json
+from flask_mail import Mail,Message
+from datetime import datetime
 
 load_dotenv()
-
+mail=Mail(app)
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
 
 api_bp = Blueprint('api', __name__, url_prefix='/labinv/api')
+
+@api_bp.route('/reset-password/<token>',methods=['GET','POST'])
+def reset_password(token):
+    if request.method=='GET':
+        return jsonify({'valid':True}),200
+    elif request.method=='POST':
+        data=request.get_json()
+        print(f"Received token: {token}")
+        print(f"Looking for user with token: {token}")
+
+        user=User.query_filter_by(password_reset_token=token).first()
+        print(f"Found user: {user}")
+
+        if user:
+            print(f"User token: {user.password_reset_token}")
+            print(f"Token expires: {user.password_reset_expires}")
+        
+        if not user or user.password_reset_expires < datetime.utcnow():
+            return jsonify({'error': 'Invalid or expired token'}), 400
+        
+
+        try:
+            print(f"Received password: {data.get('password')}")
+            is_valid, message=User.is_password_valid(data['password'])
+            if not is_valid:
+                return jsonify({'error':message}),400
+            user.set_password(data['password'])
+            user.password_reset_token=None
+            user.password_reset_expires=None
+            user.must_change_password=False
+            db.session.commit()
+
+            return jsonify({'message': 'Password has been reset successfully'}),200
+        except Exception as e:
+            print(f"Error resetting password: {str(e)}")
+            return jsonify({'error':str(e)}),400
+        
+@api_bp.route('/forgot-password',methods=['POST'])
+def forgot_password():
+    data=request.get_json()
+    user=User.query.filter_by(email=data['email']).first()
+
+    if user:
+        token=user.generate_reset_token()
+        reset_link=f"http://localhost:3000/labinv/reset-password/{token}"
+
+        msg = Message(
+            'Password Reset Request',
+            sender=app.config['MAIL_DEFAULT_SENDER'],
+            recipients=[user.email]
+        )
+        msg.body = f"""
+        You requested to reset your password.
+        Please click the following link to reset your password:
+        {reset_link}
+        
+        If you did not request this, please ignore this email.
+        """
+        mail.send(msg)
+    return jsonify({'message':'If the email exists, a rest link has been sent'}),200
+
+
+
+
 
 @api_bp.route('/users', methods=['GET'])
 @login_required
